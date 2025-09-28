@@ -38,6 +38,7 @@ public class TpoProgramacionIiiApplication {
     public static void main(String[] args) {
         SpringApplication.run(TpoProgramacionIiiApplication.class, args);
         System.out.println("arranca");
+        System.out.println("arrancandovich");
     }
 
 }

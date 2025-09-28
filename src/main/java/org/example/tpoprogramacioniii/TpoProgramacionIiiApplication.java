@@ -13,6 +13,22 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 // En las intercaces de los algoritmos (paquete service)
 // estan las justificaciones de su uso
 
+// LocationController (Location):
+//|--> BFS
+//|--> DFS
+//|--> Dijkstra
+//
+//SegmentController (Segment):
+//|--> Prim
+//|--> Kruskal
+//|--> Greedy
+//
+//TaskController (Task):
+//|--> HeldKarp (PD)
+//|--> BackTracking
+
+// Quicksort usado por quien lo necesite
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.GraphDatabase;
 

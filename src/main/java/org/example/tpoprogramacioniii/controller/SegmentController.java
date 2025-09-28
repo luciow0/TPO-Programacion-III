@@ -3,9 +3,9 @@ package org.example.tpoprogramacioniii.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// BFS, DFS, Dijkstra
+// Prim, Kruskal, Greedy
 
 @RestController
-@RequestMapping("/api/location")
-public class LocationController {
+@RequestMapping("/api/segment")
+public class SegmentController {
 }

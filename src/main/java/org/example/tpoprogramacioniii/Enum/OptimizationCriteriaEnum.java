@@ -3,9 +3,9 @@ package org.example.tpoprogramacioniii.Enum;
 // Para algoritmos de ruta (dijkstra) y MST (prim/kruskal)
 
 public enum OptimizationCriteriaEnum {
-    TIME("time_min"), // minimizar el tiempo de total de viaje
-    COST("cost_fuel"), // minimzar el costo monetario total (ej. combustible)
-    DISTANCE("distance_km"), // minimizar la longitud total de la ruta/red
+    TIME_MIN("time_min"), // minimizar el tiempo de total de viaje
+    COST_FUEL("cost_fuel"), // minimzar el costo monetario total (ej. combustible)
+    DISTANCE_KM("distance_km"), // minimizar la longitud total de la ruta/red
 
     // para algoritmos de recorrido sin peso (BFS/DFS)
     SEGMENTS_COUNT(null); // minimizar el numero de segmentos/paradas (usado en BFS)

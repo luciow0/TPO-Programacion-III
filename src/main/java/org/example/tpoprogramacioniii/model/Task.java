@@ -6,21 +6,23 @@ package org.example.tpoprogramacioniii.model;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 
-import java.sql.Time;
+import java.time.LocalTime;
 
 @Node
 public class Task {
     @Id
     private String id;
     private Integer priority;
-    private Time time_window_start;
-    private Time time_window_end;
+    private LocalTime time_window_start;
+    private LocalTime time_window_end;
+    private Location destino;
 
-    public Task(String id, Integer priority, Time time_window_start, Time time_window_end) {
+    public Task(String id, Integer priority, LocalTime time_window_start, LocalTime time_window_end, Location destino) {
         this.id = id;
         this.priority = priority;
         this.time_window_start = time_window_start;
         this.time_window_end = time_window_end;
+        this.destino = destino;
     }
 
     public Task(){}
@@ -41,19 +43,27 @@ public class Task {
         this.priority = priority;
     }
 
-    public Time getTime_window_start() {
+    public Location getDestino() {
+        return destino;
+    }
+
+    public void setDestino(Location destino) {
+        this.destino = destino;
+    }
+
+    public LocalTime getTime_window_start() {
         return time_window_start;
     }
 
-    public void setTime_window_start(Time time_window_start) {
+    public void setTime_window_start(LocalTime time_window_start) {
         this.time_window_start = time_window_start;
     }
 
-    public Time getTime_window_end() {
+    public LocalTime getTime_window_end() {
         return time_window_end;
     }
 
-    public void setTime_window_end(Time time_window_end) {
+    public void setTime_window_end(LocalTime time_window_end) {
         this.time_window_end = time_window_end;
     }
 }

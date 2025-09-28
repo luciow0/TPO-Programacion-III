@@ -2,6 +2,7 @@ package org.example.tpoprogramacioniii.model;
 
 // Es el nodo fundamental. Representa cualquier punto geográfico en la red.
 
+import org.example.tpoprogramacioniii.Enum.AreaEnum;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 
@@ -10,14 +11,12 @@ public class Location {
     @Id
     private String id;
     private String name;
-    private double latitude;
-    private double longitude;
+    private AreaEnum area;
 
-    public Location(String id, String name, double latitude, double longitude) {
+    public Location(String id, String name, AreaEnum area) {
         this.id = id;
         this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
+        this.area = area;
     }
 
     public Location(){}
@@ -38,19 +37,12 @@ public class Location {
         this.name = name;
     }
 
-    public double getLatitude() {
-        return latitude;
+    public AreaEnum getArea() {
+        return area;
     }
 
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
+    public void setArea(AreaEnum area) {
+        this.area = area;
     }
 
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
 }

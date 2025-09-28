@@ -120,21 +120,21 @@ public class DijkstraServiceImpl implements DijkstraServiceI {
     @Override
     public RouteResponseDTO calculateShortestDistanceRoute(String originLocationId, String destinationLocationId) {
         RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationLocationId,
-                OptimizationCriteriaEnum.DISTANCE);
+                OptimizationCriteriaEnum.DISTANCE_KM);
         return calculateOptimalRoute(request);
     }
 
     @Override
     public RouteResponseDTO calculateFastestTimeRoute(String originLocationId, String destinationLocationId) {
         RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationLocationId,
-                OptimizationCriteriaEnum.TIME);
+                OptimizationCriteriaEnum.TIME_MIN);
         return calculateOptimalRoute(request);
     }
 
     @Override
     public RouteResponseDTO calculateCheapestCostRoute(String originLocationId, String destinationLocationId) {
         RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationLocationId,
-                OptimizationCriteriaEnum.COST);
+                OptimizationCriteriaEnum.COST_FUEL);
         return calculateOptimalRoute(request);
     }
 
@@ -147,7 +147,7 @@ public class DijkstraServiceImpl implements DijkstraServiceI {
         }
 
         // Ejecutar Dijkstra desde el origen
-        Map<String, String> previous = dijkstra(originLocationId, OptimizationCriteriaEnum.DISTANCE);
+        Map<String, String> previous = dijkstra(originLocationId, OptimizationCriteriaEnum.DISTANCE_KM);
 
         // Crear rutas a todos los destinos alcanzables
         for (String destinationId : graph.keySet()) {
@@ -155,7 +155,7 @@ public class DijkstraServiceImpl implements DijkstraServiceI {
                 List<String> path = reconstructPath(originLocationId, destinationId, previous);
                 if (!path.isEmpty()) {
                     RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationId,
-                            OptimizationCriteriaEnum.DISTANCE);
+                            OptimizationCriteriaEnum.DISTANCE_KM);
                     routes.add(calculateOptimalRoute(request));
                 }
             }
@@ -170,7 +170,7 @@ public class DijkstraServiceImpl implements DijkstraServiceI {
             return false;
         }
 
-        Map<String, String> previous = dijkstra(originLocationId, OptimizationCriteriaEnum.DISTANCE);
+        Map<String, String> previous = dijkstra(originLocationId, OptimizationCriteriaEnum.DISTANCE_KM);
         List<String> path = reconstructPath(originLocationId, destinationLocationId, previous);
 
         return !path.isEmpty();
@@ -245,11 +245,11 @@ public class DijkstraServiceImpl implements DijkstraServiceI {
     // Obtener peso según el criterio de optimización
     private double getWeight(Edge edge, OptimizationCriteriaEnum criteria) {
         switch (criteria) {
-            case DISTANCE:
+            case DISTANCE_KM:
                 return edge.distance;
-            case TIME:
+            case TIME_MIN:
                 return edge.time;
-            case COST:
+            case COST_FUEL:
                 return edge.cost;
             default:
                 return edge.distance;

@@ -5,6 +5,10 @@ package org.example.tpoprogramacioniii.model;
 import org.example.tpoprogramacioniii.Enum.AreaEnum;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Relationship;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Node
 public class Location {
@@ -12,6 +16,9 @@ public class Location {
     private String id;
     private String name;
     private AreaEnum area;
+
+    @Relationship(type = "CONNECTED_TO", direction = Relationship.Direction.OUTGOING)
+    private List<Segment> segments = new ArrayList<>();
 
     public Location(String id, String name, AreaEnum area) {
         this.id = id;
@@ -45,4 +52,11 @@ public class Location {
         this.area = area;
     }
 
+    public List<Segment> getSegments() {
+        return segments;
+    }
+
+    public void setSegments(List<Segment> segments) {
+        this.segments = segments;
+    }
 }

@@ -2,26 +2,26 @@ package org.example.tpoprogramacioniii.model;
 
 // son las relaciones o aristas entre los nodos
 // debe encapsular toda la informacion critica en ese tramo de red
-import org.springframework.data.neo4j.core.schema.Id;
-import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.*;
 
-@Node
+@RelationshipProperties
 public class Segment {
 
     @Id
-    private String id;
-    private String fromLocationId;
-    private String toLocationId;
+    @GeneratedValue // generatedvalue le dice a SDN
+    private Long id;
+
+    @TargetNode
+    private Location toLocation;
+
     private Double distanceKm;
     private Double timeMin;
     private Double costFuel;
     private Boolean isBidirectional;
 
 
-    public Segment(String id, String fromLocationId, String toLocationId, Double distanceKm, Double timeMin, Double costFuel, Boolean isBidirectional) {
-        this.id = id;
-        this.fromLocationId = fromLocationId;
-        this.toLocationId = toLocationId;
+    public Segment(Location toLocation, Double distanceKm, Double timeMin, Double costFuel, Boolean isBidirectional) {
+        this.toLocation = toLocation;
         this.distanceKm = distanceKm;
         this.timeMin = timeMin;
         this.costFuel = costFuel;
@@ -30,28 +30,12 @@ public class Segment {
 
     public Segment(){}
 
-    public String getId() {
-        return id;
+    public Location getToLocation() {
+        return toLocation;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getFromLocationId() {
-        return fromLocationId;
-    }
-
-    public void setFromLocationId(String fromLocationId) {
-        this.fromLocationId = fromLocationId;
-    }
-
-    public String getToLocationId() {
-        return toLocationId;
-    }
-
-    public void setToLocationId(String toLocationId) {
-        this.toLocationId = toLocationId;
+    public void setToLocation(Location toLocation) {
+        this.toLocation = toLocation;
     }
 
     public Double getDistanceKm() {

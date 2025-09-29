@@ -5,7 +5,6 @@ import org.example.tpoprogramacioniii.model.Location;
 import org.example.tpoprogramacioniii.model.Segment;
 import org.example.tpoprogramacioniii.model.Task;
 import org.example.tpoprogramacioniii.repository.LocationRepository;
-import org.example.tpoprogramacioniii.repository.SegmentRepository;
 import org.example.tpoprogramacioniii.repository.TaskRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -41,7 +40,6 @@ public class GraphInitializer {
     @Bean
     public CommandLineRunner initDatabase(
             LocationRepository locationRepository,
-            SegmentRepository segmentRepository,
             TaskRepository taskRepository
     ) {
         return args -> {
@@ -50,7 +48,6 @@ public class GraphInitializer {
             // 1. Limpieza de datos existentes (TRUNCADO)
             // Se limpian primero las tareas y segmentos para evitar problemas de referencias
             taskRepository.deleteAll();
-            segmentRepository.deleteAll();
             locationRepository.deleteAll();
             System.out.println("Base de datos de Neo4j truncada (Location, Segment, Task).");
 
@@ -65,22 +62,14 @@ public class GraphInitializer {
                 Location loc = new Location(id, name, area);
                 locations.add(loc);
             }
-            // Guardar todas las ubicaciones en Neo4j
-            // locations = locationRepository.saveAll(locations);
-            for(int i = 0; i < locations.size(); i++){
-                Location loc = locations.get(i);
-                locationRepository.save(loc);
-            }
-            // locationRepository.saveAll(locations);
-            System.out.printf("Creadas y guardadas %d ubicaciones (nodos).\n", locations.size());
-
 
             // 3. Creación y guardado de Relaciones Segment (Aristas)
-            List<Segment> segments = new ArrayList<>();
 
             // Creación de una red densa (aproximadamente 2 a 4 conexiones por nodo)
             for (int i = 0; i < NUM_LOCATIONS; i++) {
                 Location loc1 = locations.get(i);
+
+                List<Segment> segments = new ArrayList<>();
 
                 int connectionsToMake = 2 + RANDOM.nextInt(3); // Crea entre 2 y 4 aristas salientes
 
@@ -90,15 +79,15 @@ public class GraphInitializer {
                     Location loc2 = locations.get(targetIndex);
 
                     // Crea el segmento unidireccional
-                    segments.add(createRandomSegment(loc1, loc2));
-
-                    // Añade el segmento inverso (bidireccional) de forma aleatoria (50% de probabilidad)
-                    boolean isBidirectional = RANDOM.nextBoolean();
-                    if (isBidirectional) {
-                        segments.add(createRandomSegment(loc2, loc1));
-                    }
+                    segments.add(createRandomSegment(loc2));
                 }
+                loc1.setSegments(segments);
             }
+
+            // Guardar todas las ubicaciones en Neo4j
+            locations = locationRepository.saveAll(locations);
+            System.out.printf("Creadas y guardadas %d ubicaciones (nodos).\n", locations.size());
+
 
             // 4. Creación de Tareas (Tasks)
             List<Task> tasks = new ArrayList<>();
@@ -110,11 +99,9 @@ public class GraphInitializer {
                 tasks.add(task);
             }
 
-            // Guardar Segmentos y Tareas
-            segmentRepository.saveAll(segments);
-            taskRepository.saveAll(tasks);
+            // Guardar Tareas
+            tasks = taskRepository.saveAll(tasks);
 
-            System.out.printf("Creados y guardados %d segmentos (aristas) que forman la red.\n", segments.size());
             System.out.printf("Creadas y guardadas %d tareas para el Problema del Vendedor Viajero (TSP).\n", tasks.size());
             System.out.println("--- Grafo de logística inicializado correctamente ---");
 
@@ -122,8 +109,6 @@ public class GraphInitializer {
             System.out.println("Datos generados: ");
             System.out.println("Locations ");
             for(Location location : locations) System.out.println("localidad: " + location.getName() + " Area: " + location.getArea());
-            System.out.println("Aristas ");
-            for(Segment segment : segments) System.out.println("distancia: " + segment.getDistanceKm() + " Tiempo: " + segment.getTimeMin());
             System.out.println("Tasks ");
             for(Task task : tasks) System.out.println("destino: " + task.getDestino().getName() + " Prioridad: " + task.getPriority());
 
@@ -133,8 +118,9 @@ public class GraphInitializer {
     /**
      * Crea un Segmento con valores aleatorios (distancia, tiempo, costo de combustible).
      */
-    private Segment createRandomSegment(Location from, Location to) {
-        String id = UUID.randomUUID().toString();
+    private Segment createRandomSegment(Location to) {
+        UUID uuid = UUID.randomUUID();
+        long id = uuid.getMostSignificantBits();
         // Generar valores realistas para un tramo de red
         // Distancia: entre 5 y 50 km
         double distanceKm = ThreadLocalRandom.current().nextDouble(5.0, 50.0);
@@ -144,7 +130,7 @@ public class GraphInitializer {
         double costFuel = distanceKm * ThreadLocalRandom.current().nextDouble(0.1, 0.5);
 
         // La bidireccionalidad se gestiona en el bucle principal, aquí es false por defecto
-        return new Segment(id, from.getId(), to.getId(),
+        return new Segment(to,
                 round(distanceKm),
                 round(timeMin),
                 round(costFuel),

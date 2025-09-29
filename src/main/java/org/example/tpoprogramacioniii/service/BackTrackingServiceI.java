@@ -1,139 +1,63 @@
 package org.example.tpoprogramacioniii.service;
 
-import org.example.tpoprogramacioniii.dto.request.BackTrackingRequestDTO;
-import org.example.tpoprogramacioniii.dto.response.RouteResponseDTO;
+import org.example.tpoprogramacioniii.model.Task;
 
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
-// Implementacion en el sistema:
-// Explorar combinaciones de rutas para
-// encontrar una que cumpla con múltiples
-// restricciones (ej. pasar por el nodo A, no pasar
-// por la zona B, y la duración total es menor a X).
-
-// Uso y justificacion:
-// Búsqueda exhaustiva con poda temprana
-// para problemas de satisfacción de restricciones.
-
+/**
+ * Servicio de selección de tareas por Backtracking.
+ * - Maximiza la suma de priority.
+ * - Respeta ventanas temporales [time_window_start, time_window_end].
+ * - Supuesto: ejecución instantánea dentro de la ventana.
+ */
 public interface BackTrackingServiceI {
 
     /**
-     * Encuentra una ruta que cumpla con todas las restricciones especificadas usando BackTracking
-     *
-     * @param request DTO que contiene origen, destino, restricciones y criterios de optimización
-     * @return RouteResponseDTO con la primera ruta válida encontrada que cumple las restricciones
+     * Selecciona el mejor subconjunto de tareas (max priority) a partir de TODAS
+     * las tareas en Neo4j, comenzando desde dayStart.
      */
-    RouteResponseDTO findConstrainedRoute(BackTrackingRequestDTO request);
+    TaskSelectionResult selectBestTasksFromDb(LocalTime dayStart);
 
     /**
-     * Encuentra todas las rutas posibles que cumplan con las restricciones especificadas
-     *
-     * @param request DTO que contiene origen, destino, restricciones y criterios de optimización
-     * @param maxSolutions Número máximo de soluciones a retornar
-     * @return Lista de RouteResponseDTO con todas las rutas válidas encontradas
+     * Selecciona el mejor subconjunto de tareas (max priority) considerando SOLO
+     * las tareas indicadas por sus IDs (si la lista es vacía o nula, se comporta como ningún resultado).
      */
-    List<RouteResponseDTO> findAllConstrainedRoutes(BackTrackingRequestDTO request, int maxSolutions);
+    TaskSelectionResult selectBestTasksByIds(List<String> taskIds, LocalTime dayStart);
 
     /**
-     * Encuentra la mejor ruta que cumpla con las restricciones usando BackTracking
-     *
-     * @param request DTO que contiene origen, destino, restricciones y criterios de optimización
-     * @return RouteResponseDTO con la mejor ruta encontrada según el criterio de optimización
+     * Variante in-memory (útil para tests o si ya tenés la lista cargada).
      */
-    RouteResponseDTO findOptimalConstrainedRoute(BackTrackingRequestDTO request);
+    TaskSelectionResult selectBestTasks(List<Task> tasks, LocalTime dayStart);
 
     /**
-     * Encuentra rutas que pasen obligatoriamente por ubicaciones específicas
-     *
-     * @param originLocationId ID de la ubicación de origen
-     * @param destinationLocationId ID de la ubicación de destino
-     * @param mandatoryLocationIds Lista de IDs de ubicaciones que deben ser visitadas
-     * @param optimizationCriteria Criterio de optimización (TIME, DISTANCE, COST)
-     * @return RouteResponseDTO con la ruta que pasa por todas las ubicaciones obligatorias
+     * Métricas de la última ejecución (exploredNodes, executionTimeMs, bestPriority, finishTime, count, algorithm).
      */
-    RouteResponseDTO findRouteWithMandatoryLocations(String originLocationId,
-                                                     String destinationLocationId,
-                                                     List<String> mandatoryLocationIds,
-                                                     String optimizationCriteria);
+    Map<String, Object> getLastSelectionStatistics();
 
     /**
-     * Encuentra rutas evitando ubicaciones específicas
-     *
-     * @param originLocationId ID de la ubicación de origen
-     * @param destinationLocationId ID de la ubicación de destino
-     * @param forbiddenLocationIds Lista de IDs de ubicaciones que NO deben ser visitadas
-     * @param optimizationCriteria Criterio de optimización (TIME, DISTANCE, COST)
-     * @return RouteResponseDTO con la ruta que evita todas las ubicaciones prohibidas
+     * Resultado de selección (inmutable).
      */
-    RouteResponseDTO findRouteAvoidingLocations(String originLocationId,
-                                                String destinationLocationId,
-                                                List<String> forbiddenLocationIds,
-                                                String optimizationCriteria);
+    final class TaskSelectionResult {
+        private final List<Task> tasks;
+        private final int totalPriority;
+        private final LocalTime finishTime;
 
-    /**
-     * Encuentra rutas con restricciones de tiempo máximo
-     *
-     * @param originLocationId ID de la ubicación de origen
-     * @param destinationLocationId ID de la ubicación de destino
-     * @param maxTimeMinutes Tiempo máximo permitido en minutos
-     * @param optimizationCriteria Criterio de optimización (TIME, DISTANCE, COST)
-     * @return RouteResponseDTO con la ruta que cumple la restricción de tiempo
-     */
-    RouteResponseDTO findRouteWithTimeConstraint(String originLocationId,
-                                                 String destinationLocationId,
-                                                 double maxTimeMinutes,
-                                                 String optimizationCriteria);
+        public TaskSelectionResult(List<Task> tasks, int totalPriority, LocalTime finishTime) {
+            this.tasks = List.copyOf(tasks);
+            this.totalPriority = totalPriority;
+            this.finishTime = finishTime;
+        }
 
-    /**
-     * Encuentra rutas con restricciones de distancia máxima
-     *
-     * @param originLocationId ID de la ubicación de origen
-     * @param destinationLocationId ID de la ubicación de destino
-     * @param maxDistanceKm Distancia máxima permitida en kilómetros
-     * @param optimizationCriteria Criterio de optimización (TIME, DISTANCE, COST)
-     * @return RouteResponseDTO con la ruta que cumple la restricción de distancia
-     */
-    RouteResponseDTO findRouteWithDistanceConstraint(String originLocationId,
-                                                     String destinationLocationId,
-                                                     double maxDistanceKm,
-                                                     String optimizationCriteria);
+        public List<Task> getTasks() { return tasks; }
+        public int getTotalPriority() { return totalPriority; }
+        public LocalTime getFinishTime() { return finishTime; }
 
-    /**
-     * Encuentra rutas con un número máximo de paradas
-     *
-     * @param originLocationId ID de la ubicación de origen
-     * @param destinationLocationId ID de la ubicación de destino
-     * @param maxStops Número máximo de paradas/intermedias permitidas
-     * @param optimizationCriteria Criterio de optimización (TIME, DISTANCE, COST)
-     * @return RouteResponseDTO con la ruta que cumple la restricción de paradas
-     */
-    RouteResponseDTO findRouteWithMaxStops(String originLocationId,
-                                           String destinationLocationId,
-                                           int maxStops,
-                                           String optimizationCriteria);
-
-    /**
-     * Verifica si es posible encontrar una ruta que cumpla con todas las restricciones
-     *
-     * @param request DTO que contiene origen, destino y restricciones
-     * @return true si existe al menos una ruta válida, false en caso contrario
-     */
-    boolean hasValidConstrainedRoute(BackTrackingRequestDTO request);
-
-    /**
-     * Obtiene estadísticas del proceso de búsqueda con BackTracking
-     *
-     * @param request DTO de la última consulta realizada
-     * @return Map con información sobre nodos explorados, podas realizadas, tiempo de ejecución, etc.
-     */
-    java.util.Map<String, Object> getBackTrackingStatistics(BackTrackingRequestDTO request);
-
-    /**
-     * Encuentra rutas con restricciones múltiples combinadas
-     *
-     * @param request DTO que contiene todas las restricciones a aplicar
-     * @param findBestSolution true para encontrar la mejor solución, false para la primera válida
-     * @return RouteResponseDTO con la ruta que cumple todas las restricciones
-     */
-    RouteResponseDTO findMultiConstrainedRoute(BackTrackingRequestDTO request, boolean findBestSolution);
+        @Override
+        public String toString() {
+            return "TaskSelectionResult{count=%d, totalPriority=%d, finish=%s}"
+                    .formatted(tasks.size(), totalPriority, finishTime);
+        }
+    }
 }

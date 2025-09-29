@@ -1,295 +1,283 @@
 package org.example.tpoprogramacioniii.service.impl;
 
+import org.example.tpoprogramacioniii.Enum.AlgorithmEnum;
+import org.example.tpoprogramacioniii.Enum.OptimizationCriteriaEnum;
 import org.example.tpoprogramacioniii.dto.request.RouteRequestDTO;
 import org.example.tpoprogramacioniii.dto.response.LocationResponseDTO;
 import org.example.tpoprogramacioniii.dto.response.RouteResponseDTO;
 import org.example.tpoprogramacioniii.dto.response.SegmentResponseDTO;
-import org.example.tpoprogramacioniii.Enum.AlgorithmEnum;
-import org.example.tpoprogramacioniii.Enum.OptimizationCriteriaEnum;
+import org.example.tpoprogramacioniii.model.Location;
+import org.example.tpoprogramacioniii.model.Segment;
+import org.example.tpoprogramacioniii.repository.LocationRepository;
+import org.example.tpoprogramacioniii.repository.SegmentRepository;
 import org.example.tpoprogramacioniii.service.DijkstraServiceI;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * Implementación de Dijkstra que construye el grafo desde Neo4j (SegmentRepository).
+ * Optimiza por DISTANCE_KM / TIME_MIN / COST_FUEL según OptimizationCriteriaEnum.
+ */
 @Service
 public class DijkstraServiceImpl implements DijkstraServiceI {
 
-    // Grafo representado como lista de adyacencia
-    private Map<String, Map<String, Edge>> graph;
+    private final SegmentRepository segmentRepository;
+    private final LocationRepository locationRepository;
 
-    public DijkstraServiceImpl() {
-        this.graph = new HashMap<>();
+    // Métricas última corrida
+    private long lastExecutionTime = 0L;
+    private int lastNodesVisited = 0;
+    private boolean lastRouteFound = false;
+    private double lastTotalDistance = 0.0;
+    private double lastTotalTime = 0.0;
+    private double lastTotalCost = 0.0;
+
+    @Autowired
+    public DijkstraServiceImpl(SegmentRepository segmentRepository,
+                               LocationRepository locationRepository) {
+        this.segmentRepository = segmentRepository;
+        this.locationRepository = locationRepository;
     }
 
-    // Clase interna para representar aristas
-    private static class Edge {
-        String from, to;
-        double distance;
-        double time;
-        double cost;
-
-        Edge(String from, String to, double distance, double time, double cost) {
-            this.from = from;
-            this.to = to;
-            this.distance = distance;
-            this.time = time;
-            this.cost = cost;
-        }
-    }
-
-    // Clase interna para nodos en la cola de prioridad
-    private static class Node implements Comparable<Node> {
-        String id;
-        double distance;
-        String previous;
-
-        Node(String id, double distance, String previous) {
-            this.id = id;
-            this.distance = distance;
-            this.previous = previous;
-        }
-
-        @Override
-        public int compareTo(Node other) {
-            return Double.compare(this.distance, other.distance);
-        }
-    }
-
-    @Override
-    public RouteResponseDTO calculateOptimalRoute(RouteRequestDTO request) {
-        long startTime = System.currentTimeMillis();
-
-        try {
-            String originId = request.getOriginLocationId();
-            String destinationId = request.getDestinationLocationId();
-            OptimizationCriteriaEnum criteria = request.getOptimizationCriteria();
-
-            // Verificar que existen los nodos
-            if (!graph.containsKey(originId) || !graph.containsKey(destinationId)) {
-                return createErrorResponse("Una o ambas ubicaciones no existen en el grafo");
-            }
-
-            // Ejecutar Dijkstra
-            Map<String, String> previous = dijkstra(originId, criteria);
-
-            // Reconstruir la ruta
-            List<String> path = reconstructPath(originId, destinationId, previous);
-
-            if (path.isEmpty()) {
-                return createErrorResponse("No se encontró una ruta válida entre las ubicaciones");
-            }
-
-            // Calcular métricas totales
-            double totalDistance = 0;
-            double totalTime = 0;
-            double totalCost = 0;
-            List<SegmentResponseDTO> segments = new ArrayList<>();
-
-            for (int i = 0; i < path.size() - 1; i++) {
-                String from = path.get(i);
-                String to = path.get(i + 1);
-                Edge edge = graph.get(from).get(to);
-
-                totalDistance += edge.distance;
-                totalTime += edge.time;
-                totalCost += edge.cost;
-
-                segments.add(new SegmentResponseDTO(from, to, edge.distance, edge.time,
-                        edge.cost, "HIGHWAY", 100.0));
-            }
-
-            // Convertir path a LocationResponseDTO
-            List<LocationResponseDTO> locationPath = new ArrayList<>();
-            for (String locationId : path) {
-                locationPath.add(new LocationResponseDTO(locationId, "Location " + locationId,
-                        0.0, 0.0, "Address " + locationId));
-            }
-
-            long executionTime = System.currentTimeMillis() - startTime;
-
-            return new RouteResponseDTO(locationPath, segments, totalDistance, totalTime,
-                    totalCost, AlgorithmEnum.DIJKSTRA, executionTime, true, "Ruta calculada exitosamente");
-
-        } catch (Exception e) {
-            long executionTime = System.currentTimeMillis() - startTime;
-            return new RouteResponseDTO(null, null, 0, 0, 0,
-                    AlgorithmEnum.DIJKSTRA, executionTime, false, "Error: " + e.getMessage());
-        }
-    }
+    /* ==================== API requerida por la interfaz ==================== */
 
     @Override
     public RouteResponseDTO calculateShortestDistanceRoute(String originLocationId, String destinationLocationId) {
-        RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationLocationId,
-                OptimizationCriteriaEnum.DISTANCE_KM);
-        return calculateOptimalRoute(request);
+        RouteRequestDTO req = new RouteRequestDTO();
+        req.setOriginLocationId(originLocationId);
+        req.setDestinationLocationId(destinationLocationId);
+        req.setOptimizationCriteria(OptimizationCriteriaEnum.DISTANCE_KM);
+        return calculateOptimalRoute(req);
     }
 
     @Override
     public RouteResponseDTO calculateFastestTimeRoute(String originLocationId, String destinationLocationId) {
-        RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationLocationId,
-                OptimizationCriteriaEnum.TIME_MIN);
-        return calculateOptimalRoute(request);
+        RouteRequestDTO req = new RouteRequestDTO();
+        req.setOriginLocationId(originLocationId);
+        req.setDestinationLocationId(destinationLocationId);
+        req.setOptimizationCriteria(OptimizationCriteriaEnum.TIME_MIN);
+        return calculateOptimalRoute(req);
     }
 
     @Override
     public RouteResponseDTO calculateCheapestCostRoute(String originLocationId, String destinationLocationId) {
-        RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationLocationId,
-                OptimizationCriteriaEnum.COST_FUEL);
-        return calculateOptimalRoute(request);
+        RouteRequestDTO req = new RouteRequestDTO();
+        req.setOriginLocationId(originLocationId);
+        req.setDestinationLocationId(destinationLocationId);
+        req.setOptimizationCriteria(OptimizationCriteriaEnum.COST_FUEL);
+        return calculateOptimalRoute(req);
     }
 
     @Override
-    public List<RouteResponseDTO> calculateAllRoutesFromOrigin(String originLocationId) {
-        List<RouteResponseDTO> routes = new ArrayList<>();
+    public RouteResponseDTO calculateOptimalRoute(RouteRequestDTO request) {
+        long start = System.currentTimeMillis();
 
-        if (!graph.containsKey(originLocationId)) {
-            return routes;
+        if (request == null || request.getOriginLocationId() == null || request.getDestinationLocationId() == null) {
+            return error("Parámetros inválidos: origin/destination nulos.");
         }
 
-        // Ejecutar Dijkstra desde el origen
-        Map<String, String> previous = dijkstra(originLocationId, OptimizationCriteriaEnum.DISTANCE_KM);
+        OptimizationCriteriaEnum criteria =
+                request.getOptimizationCriteria() == null ? OptimizationCriteriaEnum.DISTANCE_KM
+                        : request.getOptimizationCriteria();
 
-        // Crear rutas a todos los destinos alcanzables
-        for (String destinationId : graph.keySet()) {
-            if (!destinationId.equals(originLocationId)) {
-                List<String> path = reconstructPath(originLocationId, destinationId, previous);
-                if (!path.isEmpty()) {
-                    RouteRequestDTO request = new RouteRequestDTO(originLocationId, destinationId,
-                            OptimizationCriteriaEnum.DISTANCE_KM);
-                    routes.add(calculateOptimalRoute(request));
+        // Grafo desde DB
+        Map<String, Map<String, Edge>> graph = buildGraphFromDb();
+
+        String origin = request.getOriginLocationId();
+        String dest   = request.getDestinationLocationId();
+
+        // Dijkstra
+        Map<String, Double> dist = new HashMap<>();
+        Map<String, String> prev = new HashMap<>();
+        PriorityQueue<String> pq = new PriorityQueue<>(Comparator.comparingDouble(dist::get));
+        Set<String> visited = new HashSet<>();
+
+        // incluir nodos que no aparezcan como 'from' pero sí como 'to'
+        for (String u : allNodeIds(graph)) dist.put(u, Double.POSITIVE_INFINITY);
+        if (!dist.containsKey(origin)) dist.put(origin, 0.0); else dist.put(origin, 0.0);
+        pq.add(origin);
+
+        while (!pq.isEmpty()) {
+            String u = pq.poll();
+            if (!visited.add(u)) continue;
+            if (u.equals(dest)) break;
+
+            Map<String, Edge> adj = graph.getOrDefault(u, Collections.emptyMap());
+            for (Map.Entry<String, Edge> entry : adj.entrySet()) {
+                String v = entry.getKey();
+                Edge e = entry.getValue();
+                double alt = dist.get(u) + e.weight(criteria);
+                if (alt < dist.getOrDefault(v, Double.POSITIVE_INFINITY)) {
+                    dist.put(v, alt);
+                    prev.put(v, u);
+                    pq.remove(v);
+                    pq.add(v);
                 }
             }
         }
 
-        return routes;
+        List<String> nodePath = reconstruct(prev, origin, dest);
+        if (nodePath.isEmpty() && !Objects.equals(origin, dest)) {
+            // no hay camino
+            lastExecutionTime = System.currentTimeMillis() - start;
+            lastNodesVisited = visited.size();
+            lastRouteFound = false;
+            lastTotalDistance = lastTotalTime = lastTotalCost = 0.0;
+            return error("No se encontró una ruta válida entre las ubicaciones.");
+        }
+
+        // Armar segmentos y métricas
+        List<SegmentResponseDTO> segDtos = new ArrayList<>();
+        double totalDist = 0, totalTime = 0, totalCost = 0;
+
+        for (int i = 0; i + 1 < nodePath.size(); i++) {
+            String a = nodePath.get(i), b = nodePath.get(i + 1);
+            Edge e = graph.getOrDefault(a, Collections.emptyMap()).get(b);
+            if (e != null) {
+                totalDist += e.distance;
+                totalTime += e.time;
+                totalCost += e.cost;
+                // Ajustá el constructor/props a tu DTO real si difiere
+                segDtos.add(new SegmentResponseDTO(a, b, e.distance, e.time, e.cost, "HIGHWAY", 100.0));
+            }
+        }
+
+        // Locations para el path
+        Map<String, Location> locMap = loadLocationsMap();
+        List<LocationResponseDTO> locDtos = new ArrayList<>();
+        for (String id : nodePath) {
+            Location l = locMap.get(id);
+            String name = (l != null && l.getName() != null) ? l.getName() : id;
+            // Ajustá el constructor/props a tu DTO real si difiere
+            locDtos.add(new LocationResponseDTO(id, name, 0.0, 0.0, null));
+        }
+
+        lastExecutionTime = System.currentTimeMillis() - start;
+        lastNodesVisited = visited.size();
+        lastRouteFound = true;
+        lastTotalDistance = totalDist;
+        lastTotalTime = totalTime;
+        lastTotalCost = totalCost;
+
+        return new RouteResponseDTO(
+                locDtos,
+                segDtos,
+                totalDist,
+                totalTime,
+                totalCost,
+                AlgorithmEnum.DIJKSTRA,
+                lastExecutionTime,
+                true,
+                "Ruta calculada con Dijkstra (" + criteria.name() + ")"
+        );
     }
 
     @Override
     public boolean hasValidRoute(String originLocationId, String destinationLocationId) {
-        if (!graph.containsKey(originLocationId) || !graph.containsKey(destinationLocationId)) {
-            return false;
-        }
-
-        Map<String, String> previous = dijkstra(originLocationId, OptimizationCriteriaEnum.DISTANCE_KM);
-        List<String> path = reconstructPath(originLocationId, destinationLocationId, previous);
-
-        return !path.isEmpty();
+        RouteResponseDTO r = calculateShortestDistanceRoute(originLocationId, destinationLocationId);
+        return r != null && r.isValid();
     }
 
     @Override
     public Map<String, Object> getAlgorithmPerformanceInfo(RouteRequestDTO request) {
         Map<String, Object> info = new HashMap<>();
-
-        long startTime = System.currentTimeMillis();
-        RouteResponseDTO result = calculateOptimalRoute(request);
-        long endTime = System.currentTimeMillis();
-
-        info.put("executionTimeMs", endTime - startTime);
-        info.put("nodesVisited", graph.size());
         info.put("algorithm", "DIJKSTRA");
-        info.put("optimizationCriteria", request.getOptimizationCriteria());
-        info.put("routeFound", result.isValid());
-        info.put("totalDistance", result.getTotalDistanceKm());
-        info.put("totalTime", result.getTotalTimeMin());
-        info.put("totalCost", result.getTotalCost());
-
+        info.put("executionTimeMs", lastExecutionTime);
+        info.put("nodesVisited", lastNodesVisited);
+        info.put("routeFound", lastRouteFound);
+        info.put("totalDistance", lastTotalDistance);
+        info.put("totalTime", lastTotalTime);
+        info.put("totalCost", lastTotalCost);
+        info.put("criteria",
+                request != null && request.getOptimizationCriteria() != null
+                        ? request.getOptimizationCriteria().name()
+                        : OptimizationCriteriaEnum.DISTANCE_KM.name());
         return info;
     }
 
-    // Método principal del algoritmo de Dijkstra
-    private Map<String, String> dijkstra(String start, OptimizationCriteriaEnum criteria) {
-        Map<String, Double> distances = new HashMap<>();
-        Map<String, String> previous = new HashMap<>();
-        PriorityQueue<Node> queue = new PriorityQueue<>();
-        Set<String> visited = new HashSet<>();
+    /* ==================== Internals ==================== */
 
-        // Inicializar distancias
-        for (String node : graph.keySet()) {
-            distances.put(node, Double.POSITIVE_INFINITY);
+    private Map<String, Location> loadLocationsMap() {
+        Map<String, Location> map = new HashMap<>();
+        for (Location l : locationRepository.findAll()) {
+            map.put(l.getId(), l);
         }
-        distances.put(start, 0.0);
-        queue.add(new Node(start, 0.0, null));
-
-        while (!queue.isEmpty()) {
-            Node current = queue.poll();
-
-            if (visited.contains(current.id)) {
-                continue;
-            }
-
-            visited.add(current.id);
-
-            // Explorar vecinos
-            if (graph.containsKey(current.id)) {
-                for (Map.Entry<String, Edge> entry : graph.get(current.id).entrySet()) {
-                    String neighbor = entry.getKey();
-                    Edge edge = entry.getValue();
-
-                    if (!visited.contains(neighbor)) {
-                        double weight = getWeight(edge, criteria);
-                        double newDistance = distances.get(current.id) + weight;
-
-                        if (newDistance < distances.get(neighbor)) {
-                            distances.put(neighbor, newDistance);
-                            previous.put(neighbor, current.id);
-                            queue.add(new Node(neighbor, newDistance, current.id));
-                        }
-                    }
-                }
-            }
-        }
-
-        return previous;
+        return map;
     }
 
-    // Obtener peso según el criterio de optimización
-    private double getWeight(Edge edge, OptimizationCriteriaEnum criteria) {
-        switch (criteria) {
-            case DISTANCE_KM:
-                return edge.distance;
-            case TIME_MIN:
-                return edge.time;
-            case COST_FUEL:
-                return edge.cost;
-            default:
-                return edge.distance;
+    /** Estructura interna de arista (dirigida). */
+    private static class Edge {
+        final String from, to;
+        final double distance, time, cost;
+        Edge(String from, String to, double distance, double time, double cost) {
+            this.from = from; this.to = to;
+            this.distance = distance; this.time = time; this.cost = cost;
+        }
+        double weight(OptimizationCriteriaEnum c) {
+            return switch (c) {
+                case TIME_MIN -> time;
+                case COST_FUEL -> cost;
+                default -> distance;
+            };
         }
     }
 
-    // Reconstruir la ruta desde el destino hasta el origen
-    private List<String> reconstructPath(String start, String end, Map<String, String> previous) {
-        List<String> path = new ArrayList<>();
-        String current = end;
+    /** Construye lista de adyacencia: Map<from, Map<to, Edge>> */
+    private Map<String, Map<String, Edge>> buildGraphFromDb() {
+        Map<String, Map<String, Edge>> g = new HashMap<>();
+        List<Segment> segments = segmentRepository.findAll();
 
-        while (current != null) {
-            path.add(current);
-            current = previous.get(current);
+        for (Segment s : segments) {
+            String from = s.getFromLocationId();
+            String to   = s.getToLocationId();
+            double d = nz(s.getDistanceKm());
+            double t = nz(s.getTimeMin());
+            double c = nz(s.getCostFuel());
+
+            Edge e = new Edge(from, to, d, t, c);
+            g.computeIfAbsent(from, k -> new HashMap<>()).put(to, e);
+
+            if (Boolean.TRUE.equals(s.getBidirectional())) {
+                Edge rev = new Edge(to, from, d, t, c);
+                g.computeIfAbsent(to, k -> new HashMap<>()).put(from, rev);
+            }
         }
+        return g;
+    }
 
-        Collections.reverse(path);
+    private static double nz(Double v) { return v == null ? 0.0 : v; }
 
-        // Verificar que el camino comience en el origen
-        if (!path.isEmpty() && !path.get(0).equals(start)) {
-            return new ArrayList<>();
+    /** Conjunto de nodos presentes en el grafo (from ∪ to). */
+    private static Set<String> allNodeIds(Map<String, Map<String, Edge>> g) {
+        Set<String> ids = new HashSet<>(g.keySet());
+        for (Map<String, Edge> map : g.values()) ids.addAll(map.keySet());
+        return ids;
+    }
+
+    private static List<String> reconstruct(Map<String, String> prev, String s, String t) {
+        if (Objects.equals(s, t)) return Collections.singletonList(s);
+        LinkedList<String> path = new LinkedList<>();
+        String cur = t;
+        while (cur != null && !Objects.equals(cur, s)) {
+            path.addFirst(cur);
+            cur = prev.get(cur);
         }
-
+        if (cur == null) return Collections.emptyList();
+        path.addFirst(s);
         return path;
     }
 
-    // Crear respuesta de error
-    private RouteResponseDTO createErrorResponse(String message) {
-        return new RouteResponseDTO(null, null, 0, 0, 0,
-                AlgorithmEnum.DIJKSTRA, 0L, false, message);
-    }
-
-    // Método para agregar aristas al grafo (útil para testing o inicialización)
-    public void addEdge(String from, String to, double distance, double time, double cost) {
-        graph.computeIfAbsent(from, k -> new HashMap<>()).put(to, new Edge(from, to, distance, time, cost));
-        graph.computeIfAbsent(to, k -> new HashMap<>()).put(from, new Edge(to, from, distance, time, cost));
-    }
-
-    // Método para agregar nodos al grafo
-    public void addNode(String nodeId) {
-        graph.putIfAbsent(nodeId, new HashMap<>());
+    private RouteResponseDTO error(String msg) {
+        return new RouteResponseDTO(
+                Collections.emptyList(),
+                Collections.emptyList(),
+                0.0, 0.0, 0.0,
+                AlgorithmEnum.DIJKSTRA,
+                0L,
+                false,
+                msg
+        );
     }
 }

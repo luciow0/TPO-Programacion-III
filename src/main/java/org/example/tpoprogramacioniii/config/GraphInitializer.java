@@ -11,14 +11,17 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+
+// funciones que componen esta clase:
+// initDatabase
+// createRandomSegment
+// createRandomTask
 
 @Configuration
 public class GraphInitializer {
@@ -63,7 +66,12 @@ public class GraphInitializer {
                 locations.add(loc);
             }
             // Guardar todas las ubicaciones en Neo4j
-            locations = locationRepository.saveAll(locations);
+            // locations = locationRepository.saveAll(locations);
+            for(int i = 0; i < locations.size(); i++){
+                Location loc = locations.get(i);
+                locationRepository.save(loc);
+            }
+            // locationRepository.saveAll(locations);
             System.out.printf("Creadas y guardadas %d ubicaciones (nodos).\n", locations.size());
 
 
@@ -103,12 +111,22 @@ public class GraphInitializer {
             }
 
             // Guardar Segmentos y Tareas
-            segments = segmentRepository.saveAll(segments);
+            segmentRepository.saveAll(segments);
             taskRepository.saveAll(tasks);
 
             System.out.printf("Creados y guardados %d segmentos (aristas) que forman la red.\n", segments.size());
             System.out.printf("Creadas y guardadas %d tareas para el Problema del Vendedor Viajero (TSP).\n", tasks.size());
             System.out.println("--- Grafo de logística inicializado correctamente ---");
+
+            System.out.println(" ");
+            System.out.println("Datos generados: ");
+            System.out.println("Locations ");
+            for(Location location : locations) System.out.println("localidad: " + location.getName() + " Area: " + location.getArea());
+            System.out.println("Aristas ");
+            for(Segment segment : segments) System.out.println("distancia: " + segment.getDistanceKm() + " Tiempo: " + segment.getTimeMin());
+            System.out.println("Tasks ");
+            for(Task task : tasks) System.out.println("destino: " + task.getDestino().getName() + " Prioridad: " + task.getPriority());
+
         };
     }
 

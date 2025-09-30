@@ -51,7 +51,6 @@ public class GraphInitializer {
             locationRepository.deleteAll();
             System.out.println("Base de datos de Neo4j truncada (Location, Segment, Task).");
 
-
             // 2. Creación y guardado de Nodos Location (20 nodos)
             List<Location> locations = new ArrayList<>();
             for (int i = 0; i < NUM_LOCATIONS; i++) {
@@ -64,7 +63,6 @@ public class GraphInitializer {
             }
 
             // 3. Creación y guardado de Relaciones Segment (Aristas)
-
             // Creación de una red densa (aproximadamente 2 a 4 conexiones por nodo)
             for (int i = 0; i < NUM_LOCATIONS; i++) {
                 Location loc1 = locations.get(i);
@@ -105,13 +103,6 @@ public class GraphInitializer {
             System.out.printf("Creadas y guardadas %d tareas para el Problema del Vendedor Viajero (TSP).\n", tasks.size());
             System.out.println("--- Grafo de logística inicializado correctamente ---");
 
-            System.out.println(" ");
-            System.out.println("Datos generados: ");
-            System.out.println("Locations ");
-            for(Location location : locations) System.out.println("localidad: " + location.getName() + " Area: " + location.getArea());
-            System.out.println("Tasks ");
-            for(Task task : tasks) System.out.println("destino: " + task.getDestino().getName() + " Prioridad: " + task.getPriority());
-
         };
     }
 
@@ -133,8 +124,8 @@ public class GraphInitializer {
         return new Segment(to,
                 round(distanceKm),
                 round(timeMin),
-                round(costFuel),
-                false);
+                round(costFuel)
+        );
     }
 
     /**

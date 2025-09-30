@@ -17,15 +17,12 @@ public class Segment {
     private Double distanceKm;
     private Double timeMin;
     private Double costFuel;
-    private Boolean isBidirectional;
 
-
-    public Segment(Location toLocation, Double distanceKm, Double timeMin, Double costFuel, Boolean isBidirectional) {
+    public Segment(Location toLocation, Double distanceKm, Double timeMin, Double costFuel) {
         this.toLocation = toLocation;
         this.distanceKm = distanceKm;
         this.timeMin = timeMin;
         this.costFuel = costFuel;
-        this.isBidirectional = isBidirectional;
     }
 
     public Segment(){}
@@ -60,13 +57,5 @@ public class Segment {
 
     public void setCostFuel(Double costFuel) {
         this.costFuel = costFuel;
-    }
-
-    public Boolean getBidirectional() {
-        return isBidirectional;
-    }
-
-    public void setBidirectional(Boolean bidirectional) {
-        isBidirectional = bidirectional;
     }
 }

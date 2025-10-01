@@ -66,4 +66,5 @@ public class Task {
     public void setTime_window_end(LocalTime time_window_end) {
         this.time_window_end = time_window_end;
     }
+
 }

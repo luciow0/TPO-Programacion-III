@@ -46,13 +46,13 @@ public class ViewConsole {
             int opcion = elegirOpcionMenu();
             switch (opcion) {
                 case 0 -> {
-                    System.out.println("Saliendo del programa... 👋");
+                    System.out.println("Saliendo del programa... 👋 ");
                     System.exit(0);
                 }
                 case 1 -> quickSortFlow();
                 case 2 -> grafoFlow();
                 case 3 -> backtrackingFlow();
-                default -> System.out.println("Opción inválida.");
+                default -> System.out.println("Opción inválida. Por favor seleccione una opcion correcta ");
             }
         }
     }
@@ -62,7 +62,7 @@ public class ViewConsole {
     private void quickSortFlow() {
         List<Task> all = taskRepository.findAll();
         if (all.isEmpty()) {
-            System.out.println("No hay tareas cargadas.");
+            System.out.println("No hay tareas cargadas. ");
             return;
         }
 
@@ -134,7 +134,7 @@ public class ViewConsole {
         }
         System.out.println("\n=== LISTA DE NODOS (Location) ===");
         for (Location loc : nodos) {
-            System.out.printf("• ID: %s | Nombre: %s%n", loc.getId(), loc.getName());
+            System.out.printf("• ID: %s | Nombre: %s%n", loc.getId().substring(0,7), loc.getName());
         }
         System.out.println("=================================\n");
     }
@@ -211,11 +211,12 @@ public class ViewConsole {
         while (true) {
             try {
                 System.out.println("""
+                        
                         ELEGIR UNA OPCIÓN:
                         0- SALIR
-                        1- SORTING
-                        2- GRAFOS
-                        3- BACKTRACKING (selección óptima de tareas)
+                        1- Opciones para ordenar las tareas 
+                        2- Algoritmos aplicables a grafos
+                        3- Selección óptima de tareas (Backtracking)
                         """);
                 System.out.print("Opción (0-3): ");
                 String input = scanner.nextLine().trim();
@@ -231,7 +232,8 @@ public class ViewConsole {
     private String quickSortParametro() {
         while (true) {
             try {
-                System.out.println("""
+                System.out.println("""  
+                        
                         ELIJA UNA OPCIÓN DE SORTING:
                         1- En función de la prioridad
                         2- En función de la hora de inicio
@@ -286,13 +288,14 @@ public class ViewConsole {
 
     private void printTaskLine(Task t) {
         String id = t.getId();
+        id = id.substring(0, 7);
         String pr = String.valueOf(nz(t.getPriority()));
         String st = t.getTime_window_start() == null ? "--:--" : t.getTime_window_start().format(HHMM);
         String en = t.getTime_window_end() == null ? "--:--" : t.getTime_window_end().format(HHMM);
         String dest = (t.getDestino() != null && t.getDestino().getName() != null)
                 ? t.getDestino().getName()
                 : "(sin destino)";
-        System.out.printf("• %-12s | priority=%-3s | start=%-5s | end=%-5s | destino=%s%n",
+        System.out.printf("• %-12s | Priority = %-3s | Start = %-5s | End = %-5s | Destino = %s%n",
                 id, pr, st, en, dest);
     }
 

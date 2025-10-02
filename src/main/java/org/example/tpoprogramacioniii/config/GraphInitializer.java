@@ -43,13 +43,10 @@ public class GraphInitializer {
             TaskRepository taskRepository
     ) {
         return args -> {
-            System.out.println("--- Iniciando Script de Inicialización de Grafo Neo4j ---");
-
             // 1. Limpieza de datos existentes (TRUNCADO)
             // Se limpian primero las tareas y segmentos para evitar problemas de referencias
             taskRepository.deleteAll();
             locationRepository.deleteAll();
-            System.out.println("Base de datos de Neo4j truncada (Location, Segment, Task).");
 
             // 2. Creación y guardado de Nodos Location (20 nodos)
             List<Location> locations = new ArrayList<>();
@@ -84,8 +81,6 @@ public class GraphInitializer {
 
             // Guardar todas las ubicaciones en Neo4j
             locations = locationRepository.saveAll(locations);
-            System.out.printf("Creadas y guardadas %d ubicaciones (nodos).\n", locations.size());
-
 
             // 4. Creación de Tareas (Tasks)
             List<Task> tasks = new ArrayList<>();
@@ -99,10 +94,6 @@ public class GraphInitializer {
 
             // Guardar Tareas
             tasks = taskRepository.saveAll(tasks);
-
-            System.out.printf("Creadas y guardadas %d tareas para el Problema del Vendedor Viajero (TSP).\n", tasks.size());
-            System.out.println("--- Grafo de logística inicializado correctamente ---");
-
         };
     }
 

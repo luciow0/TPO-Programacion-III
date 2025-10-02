@@ -25,3 +25,9 @@ public class Application implements CommandLineRunner {
         viewConsole.run();
     }
 }
+
+// yo voy a hacer:
+// - Branch and bound
+// - Breadth First Search
+// - Depth First Search
+// - Kruskal

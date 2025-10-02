@@ -2,8 +2,6 @@ package org.example.tpoprogramacioniii.Enum;
 
 public enum AlgorithmEnum {
     DIJKSTRA,
-    QUICK_SORT,
-    BACK_TRACKING,
     BFS,
     DFS,
     TSP,

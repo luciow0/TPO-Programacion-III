@@ -6,16 +6,16 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TpoProgramacionIiiApplication implements CommandLineRunner {
+public class Application implements CommandLineRunner {
 
     private final ViewConsole viewConsole;
 
-    public TpoProgramacionIiiApplication(ViewConsole viewConsole) {
+    public Application(ViewConsole viewConsole) {
         this.viewConsole = viewConsole;
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(TpoProgramacionIiiApplication.class, args);
+        SpringApplication.run(Application.class, args);
         System.out.println("arrancandovich");
     }
 

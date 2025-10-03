@@ -436,7 +436,7 @@ public class ViewConsole {
                         
                         ELEGIR UNA OPCIÓN:
                         0- SALIR
-                        1- Opciones para ordenar las tareas 
+                        1- Opciones para ordenar las tareas (Quicksort)
                         2- Algoritmos aplicables a grafos
                         3- Selección óptima de tareas (Backtracking)
                         """);

@@ -25,6 +25,3 @@ public class Application implements CommandLineRunner {
         viewConsole.run();
     }
 }
-
-// yo voy a hacer:
-// - Kruskal

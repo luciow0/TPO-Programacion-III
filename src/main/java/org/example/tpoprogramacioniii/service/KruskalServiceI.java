@@ -1,12 +1,15 @@
 package org.example.tpoprogramacioniii.service;
 
-// Implementacion en el sistema:
-// Calcular el Árbol de Expansión Mínimo (MST) para una región.
+import org.example.tpoprogramacioniii.model.Segment;
 
-// Uso y justificacion:
-// Se utiliza para planificar la instalación de infraestructura
-// (por ejemplo, cableado de fibra óptica o nuevas carreteras)
-// que conecte todos los puntos con el costo mínimo total.
+import java.util.List;
+import java.util.Map;
 
 public interface KruskalServiceI {
+    /**
+     * Calcula el MST con Kruskal y devuelve:
+     * - "edges": lista de segmentos seleccionados
+     * - "totalWeight": peso total del MST
+     */
+    Map<String, Object> calculateMST();
 }

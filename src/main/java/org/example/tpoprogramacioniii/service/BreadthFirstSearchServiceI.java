@@ -9,5 +9,9 @@ package org.example.tpoprogramacioniii.service;
 // para encontrar si existe una conexión a un nodo
 // en particular o el camino más corto en número de aristas.
 
+import java.util.List;
+
 public interface BreadthFirstSearchServiceI {
+
+    List<String> bfs(String originId);
 }

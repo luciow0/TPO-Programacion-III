@@ -1,13 +1,18 @@
 package org.example.tpoprogramacioniii.service;
 
-// Implementacion en el sistema:
-// Calcular el Árbol de Expansión Mínimo (MST) para una región.
-
-// Uso y justificacion:
-// Se utiliza para planificar la instalación de infraestructura
-// (por ejemplo, cableado de fibra óptica o nuevas carreteras)
-// que conecte todos los puntos con el costo mínimo total.
-
+import java.util.List;
+import java.util.Map;
 
 public interface PrimServiceI {
+    /**
+     * Ejecuta el algoritmo de Prim desde un nodo origen.
+     *
+     * @param startId ID del nodo origen en la base de datos
+     * @return Un mapa con:
+     *   - "valid": boolean
+     *   - "message": String (en caso de error)
+     *   - "mstEdges": List<String> (lista de aristas formateadas origen->destino)
+     *   - "totalWeight": Double (peso total del MST)
+     */
+    Map<String, Object> calculateMST(String startId);
 }

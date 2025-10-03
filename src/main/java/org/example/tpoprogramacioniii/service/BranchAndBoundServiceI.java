@@ -10,5 +10,9 @@ package org.example.tpoprogramacioniii.service;
 // podando ramas que ya superan el costo de
 // la mejor solución encontrada hasta ahora.
 
+import org.example.tpoprogramacioniii.model.Task;
+import java.util.List;
+
 public interface BranchAndBoundServiceI {
+    List<Task> intervalSchedulingBranchAndBound(List<Task> tasks);
 }

@@ -1,13 +1,18 @@
 package org.example.tpoprogramacioniii.service;
 
-// Implementacion en el sistema:
-// Encontrar la mejor ruta localmente, por ejemplo,
-// en la elección del siguiente nodo de entrega más cercano.
+import org.example.tpoprogramacioniii.model.Task;
 
-// Uso y justificacion:
-// Simplificación para la heurística
-// de problemas complejos (como el Vendedor Viajero)
-// o para decisiones inmediatas.
+import java.util.List;
 
 public interface GreedyServiceI {
+
+    /**
+     * Aplica el algoritmo Greedy para la selección de intervalos,
+     * eligiendo un conjunto máximo de tareas no solapadas.
+     * La heurística Greedy elegida será ordenar por la hora de finalización más temprana.
+     *
+     * @param tasks La lista de todas las tareas disponibles.
+     * @return Una lista de objetos Task seleccionados que no se solapan.
+     */
+    List<Task> selectTasksMaxNumberNonOverlapping(List<Task> tasks);
 }

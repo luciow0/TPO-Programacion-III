@@ -6,9 +6,9 @@ import org.example.tpoprogramacioniii.model.Location;
 import org.example.tpoprogramacioniii.model.Task;
 import org.example.tpoprogramacioniii.repository.LocationRepository;
 import org.example.tpoprogramacioniii.repository.TaskRepository;
-import org.example.tpoprogramacioniii.service.BackTrackingServiceI;
-import org.example.tpoprogramacioniii.service.DijkstraServiceI;
-import org.example.tpoprogramacioniii.service.QuickSortServiceI;
+import org.example.tpoprogramacioniii.service.*;
+import org.example.tpoprogramacioniii.service.impl.BranchAndBoundServiceImpl;
+import org.example.tpoprogramacioniii.service.impl.BreadthFirstSearchServiceImpl;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -24,20 +24,34 @@ public class ViewConsole {
     private final DijkstraServiceI dijkstraService;
     private final TaskRepository taskRepository;
     private final LocationRepository locationRepository;
+    private final BreadthFirstSearchServiceI bfsService;
+    private final DepthFirstSearchServiceI depthFirstSearchService;
+    private final KruskalServiceI kruskalService;
+    private final PrimServiceI primService;
+    private final GreedyServiceI greedyService;
+    private final HeldKarpServiceI heldKarpService;
 
     private final Scanner scanner = new Scanner(System.in);
     private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm");
+    private final BranchAndBoundServiceImpl branchAndBoundServiceImpl;
 
     public ViewConsole(QuickSortServiceI quickSortService,
                        BackTrackingServiceI backTrackingService,
                        DijkstraServiceI dijkstraService,
                        TaskRepository taskRepository,
-                       LocationRepository locationRepository) {
+                       LocationRepository locationRepository, BreadthFirstSearchServiceI bfsService, DepthFirstSearchServiceI depthFirstSearchService, KruskalServiceI kruskalService, PrimServiceI primService, GreedyServiceI greedyService, HeldKarpServiceI heldKarpService, BranchAndBoundServiceImpl branchAndBoundServiceImpl) {
         this.quickSortService = quickSortService;
         this.backTrackingService = backTrackingService;
         this.dijkstraService = dijkstraService;
         this.taskRepository = taskRepository;
         this.locationRepository = locationRepository;
+        this.bfsService = bfsService;
+        this.depthFirstSearchService = depthFirstSearchService;
+        this.kruskalService = kruskalService;
+        this.primService = primService;
+        this.greedyService = greedyService;
+        this.heldKarpService = heldKarpService;
+        this.branchAndBoundServiceImpl = branchAndBoundServiceImpl;
     }
 
     /** Punto de entrada de la vista de consola */
@@ -118,7 +132,15 @@ public class ViewConsole {
             AlgorithmEnum elegido = algs[op - 1];
 
             switch (elegido) {
-                case DIJKSTRA -> runDijkstra(); // pide origen/destino y muestra resultado
+                case DIJKSTRA -> runDijkstra();
+                case BRANCH_AND_BOUND -> runBranchAndBound();
+                case BFS -> runBFS();
+                case DFS -> runDFS();
+                case MST_KRUSKAL -> runKruskal();
+                case MST_PRIM -> runPrim();
+                case HELD_KARP -> runHeldKarp();
+                case GREEDY -> runGreedy();
+                // pide origen/destino y muestra resultado
                 default -> {
                     System.out.println("Aún no implementado para: " + elegido.name() + "\n");
                 }
@@ -205,6 +227,206 @@ public class ViewConsole {
         System.out.println("==================================\n");
     }
 
+
+    private void runBranchAndBound() {
+        List<Task> all = taskRepository.findAll();
+        List<Task> result = branchAndBoundServiceImpl.intervalSchedulingBranchAndBound(all);
+        System.out.println("Tareas seleccionadas:");
+        result.forEach(System.out::println);
+    }
+
+    private void runBFS() {
+        System.out.println("\n== BFS ==");
+        String origin = readNonEmpty("ID de nodo ORIGEN: ");
+
+        List<String> recorrido = bfsService.bfs(origin);
+
+        if (recorrido.isEmpty()) {
+            System.out.println("No se pudo iniciar BFS (nodo inválido o sin conexiones).");
+            return;
+        }
+
+        System.out.println("Recorrido BFS desde el nodo " + origin + ":");
+        for (String id : recorrido) {
+            String name = locationRepository.findById(id)
+                    .map(Location::getName)
+                    .orElse("(sin nombre)");
+            System.out.printf(" -> %s (%s)%n", id.substring(0,7), name);
+        }
+        System.out.println();
+    }
+
+    private void runDFS() {
+        System.out.println("\n== DEPTH FIRST SEARCH (DFS) ==");
+        String origin = readNonEmpty("ID de nodo ORIGEN: ");
+        String dest = readNonEmpty("ID de nodo DESTINO: ");
+
+        Map<String, Object> result = depthFirstSearchService.depthFirstSearch(origin, dest);
+
+        if (!(Boolean) result.get("valid")) {
+            System.out.println("Resultado: " + result.get("message") + "\n");
+            return;
+        }
+
+        @SuppressWarnings("unchecked")
+        List<String> path = (List<String>) result.get("path");
+
+        System.out.println("\nCamino encontrado (DFS):");
+        for (int i = 0; i < path.size(); i++) {
+            String id = path.get(i);
+            String name = locationRepository.findById(id)
+                    .map(Location::getName).orElse("(sin nombre)");
+            System.out.printf("  %s%s (%s)%n", i == 0 ? "" : "→ ", id, name);
+        }
+        System.out.println();
+    }
+
+    private void runKruskal() {
+        System.out.println("\n== KRUSKAL ==");
+        Map<String, Object> result = kruskalService.calculateMST();
+
+        @SuppressWarnings("unchecked")
+        List<?> edges = (List<?>) result.get("edges");
+        double totalWeight = (double) result.get("totalWeight");
+
+        System.out.println("Aristas seleccionadas en el MST:");
+        edges.forEach(System.out::println);
+        System.out.println("Peso total del MST: " + totalWeight + " km\n");
+    }
+
+    private void runPrim() {
+        System.out.println("\n== PRIM ==");
+        String origin = readNonEmpty("ID de nodo ORIGEN: ");
+
+        Map<String, Object> result = primService.calculateMST(origin);
+
+        boolean valid = Boolean.TRUE.equals(result.get("valid"));
+        if (!valid) {
+            System.out.println("Resultado: " + result.get("message") + "\n");
+            return;
+        }
+
+        @SuppressWarnings("unchecked")
+        List<String> mstEdges = (List<String>) result.get("mstEdges");
+        Double totalWeight = (Double) result.get("totalWeight");
+
+        System.out.println("\nAristas en el MST:");
+        mstEdges.forEach(e -> System.out.println("  " + e));
+        System.out.println("Peso total: " + totalWeight + " km\n");
+    }
+
+
+    // ...
+
+    private void runHeldKarp() {
+        System.out.println("\n== TSP - Held-Karp (Programación Dinámica) ==");
+        List<Task> allTasks = taskRepository.findAll();
+
+        if (allTasks.isEmpty()) {
+            System.out.println("No hay tareas cargadas para resolver el TSP.");
+            return;
+        }
+
+        // 1. Pedir ID de la ubicación de inicio (ej. Base Central)
+        this.mostrarNodos();
+        String startId = readNonEmpty("ID de nodo de INICIO (ej. Base Central): ");
+        Location startLocation = locationRepository.findById(startId).orElse(null);
+
+        if (startLocation == null) {
+            System.out.println("Ubicación de inicio no encontrada.");
+            return;
+        }
+
+        // 2. Elegir el criterio de optimización
+        OptimizationCriteriaEnum criteria = chooseOptimizationCriteria();
+
+        // 3. Ejecutar Held-Karp
+        Map<String, Object> result = heldKarpService.findOptimalTspRoute(
+                allTasks, startId, criteria
+        );
+
+        // 4. Mostrar el resultado
+        System.out.println("\n=== RESULTADO TSP (Held-Karp) ===");
+        boolean valid = Boolean.TRUE.equals(result.get("valid"));
+
+        if (!valid) {
+            System.out.println("Mensaje: " + result.get("message"));
+            System.out.println("================================\n");
+            return;
+        }
+
+        @SuppressWarnings("unchecked")
+        List<String> pathIds = (List<String>) result.get("path");
+        Double totalCost = (Double) result.get("totalCost");
+
+        System.out.println("Criterio: " + criteria.name());
+        System.out.println("Costo total óptimo: " + totalCost);
+        System.out.println("Ruta óptima (Ciclo Hamiltonian mínimo):");
+
+        for (int i = 0; i < pathIds.size(); i++) {
+            String id = pathIds.get(i);
+            String name = locationRepository.findById(id)
+                    .map(Location::getName).orElse("(sin nombre)");
+
+            String arrow = (i < pathIds.size() - 1) ? " → " : " ↺ (Regreso al inicio)";
+            System.out.printf("  %s%s (%s)%n", id, arrow, name);
+        }
+        System.out.println("================================\n");
+    }
+
+    // Método auxiliar para elegir el criterio de optimización
+    private OptimizationCriteriaEnum chooseOptimizationCriteria() {
+        while (true) {
+            System.out.println("\nELIJA CRITERIO DE OPTIMIZACIÓN:");
+            OptimizationCriteriaEnum[] criteria = OptimizationCriteriaEnum.values();
+            for (int i = 0; i < criteria.length; i++) {
+                System.out.printf("%d- %s%n", i + 1, criteria[i].name());
+            }
+            System.out.print("Opción (1-" + criteria.length + ", default 1): ");
+            String line = scanner.nextLine().trim();
+            if (line.isEmpty()) return OptimizationCriteriaEnum.DISTANCE_KM;
+
+            try {
+                int op = Integer.parseInt(line);
+                if (op >= 1 && op <= criteria.length) return criteria[op - 1];
+                System.out.println("Opción inválida.");
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada inválida. Ingresá un número.");
+            }
+        }
+    }
+
+// ...
+
+    // ... dentro de ViewConsole
+
+    private void runGreedy() {
+        List<Task> all = taskRepository.findAll();
+        if (all.isEmpty()) {
+            System.out.println("No hay tareas cargadas para evaluar el algoritmo Greedy.");
+            return;
+        }
+
+        System.out.println("\n=== TODAS LAS TAREAS ===");
+        printTasks(all);
+
+        // Ejecutar el algoritmo Greedy de selección de intervalos
+        List<Task> chosenTasks = greedyService.selectTasksMaxNumberNonOverlapping(all);
+
+        if (chosenTasks.isEmpty()) {
+            System.out.println("\nNo se seleccionaron tareas (resultado vacío).");
+            return;
+        }
+
+        // Calcular la cantidad de tareas seleccionadas
+        System.out.println("\n=== TAREAS SELECCIONADAS (GREEDY: Máximo Número de Tareas No Solapadas) ===");
+        for (Task t : chosenTasks) {
+            printTaskLine(t);
+        }
+        System.out.println("----------------------------------");
+        System.out.println("Número total de tareas seleccionadas: " + chosenTasks.size());
+        System.out.println("==================================\n");
+    }
     /* ===================== HELPERS MENÚ ===================== */
 
     private int elegirOpcionMenu() {

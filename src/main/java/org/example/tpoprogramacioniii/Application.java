@@ -27,7 +27,4 @@ public class Application implements CommandLineRunner {
 }
 
 // yo voy a hacer:
-// - Branch and bound
-// - Breadth First Search
-// - Depth First Search
 // - Kruskal

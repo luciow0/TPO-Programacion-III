@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.round;
+
 @Service
 public class DijkstraServiceImpl implements DijkstraServiceI {
 
@@ -89,7 +91,12 @@ public class DijkstraServiceImpl implements DijkstraServiceI {
                 "valid", true,
                 "message", "OK",
                 "path", path,
-                "distance", dist.get(destinationLocationId)
+                "distance", roundDouble(dist.get(destinationLocationId))
         );
     }
+    private static double roundDouble(double value) {
+        double factor = Math.pow(10, 2);
+        return Math.round(value * factor) / factor;
+    }
+
 }

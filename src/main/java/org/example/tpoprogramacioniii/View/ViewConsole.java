@@ -148,7 +148,6 @@ public class ViewConsole {
         }
     }
     private void mostrarNodos(){
-        // Listar nodos (Locations) antes del submenú
         List<Location> nodos = locationRepository.findAll();
         if (nodos.isEmpty()) {
             System.out.println("No hay nodos en la base.");
@@ -156,10 +155,11 @@ public class ViewConsole {
         }
         System.out.println("\n=== LISTA DE NODOS (Location) ===");
         for (Location loc : nodos) {
-            System.out.printf("• ID: %s | Nombre: %s%n", loc.getId().substring(0,7), loc.getName());
+            System.out.printf("• ID: %s | Nombre: %s%n", loc.getId(), loc.getName()); // ⬅️ sin substring
         }
         System.out.println("=================================\n");
     }
+
 
     private void runDijkstra() {
         System.out.println("\n== DIJKSTRA ==");
@@ -509,8 +509,7 @@ public class ViewConsole {
     }
 
     private void printTaskLine(Task t) {
-        String id = t.getId();
-        id = id.substring(0, 7);
+        String id = t.getId(); // sin substring
         String pr = String.valueOf(nz(t.getPriority()));
         String st = t.getTime_window_start() == null ? "--:--" : t.getTime_window_start().format(HHMM);
         String en = t.getTime_window_end() == null ? "--:--" : t.getTime_window_end().format(HHMM);

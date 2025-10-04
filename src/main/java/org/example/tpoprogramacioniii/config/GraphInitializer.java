@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Configuration
 public class GraphInitializer {
-
+    private static int ID_SIGUIENTE=0;
     // Nombres base para 20 ubicaciones
     private static final String[] LOCATION_NAMES = {
             "Base Central", "Depósito Norte", "Planta Sur", "HUB Este", "Oficina Oeste",
@@ -51,7 +51,7 @@ public class GraphInitializer {
             // 2. Creación y guardado de Nodos Location (20 nodos)
             List<Location> locations = new ArrayList<>();
             for (int i = 0; i < NUM_LOCATIONS; i++) {
-                String id = UUID.randomUUID().toString();
+                String id = String.valueOf(ID_SIGUIENTE++);
                 String name = LOCATION_NAMES[i];
                 // Asigna un área de forma aleatoria
                 AreaEnum area = AREAS[RANDOM.nextInt(AREAS.length)];
@@ -123,7 +123,7 @@ public class GraphInitializer {
      * Crea una Tarea con prioridad y ventana de tiempo aleatoria usando LocalTime.
      */
     private Task createRandomTask(Location destination, int index) {
-        String id = UUID.randomUUID().toString();
+        String id = String.valueOf(ID_SIGUIENTE++);
         int priority = index + 1;
 
         // Crear ventanas de tiempo dentro de un día de trabajo (ej. 8:00 a 20:00)
